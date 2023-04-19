@@ -24,13 +24,12 @@ void setup() {
   
   Serial.begin(9600);
   if (!mpr.begin()) {
-    Serial.println("ERROR: MRPLS Not Found.");
+    Serial.println("ERROR");
     while (1) delay(10);
   }
   
-  Serial.println("SUCCESS: MRPLS Found.");
+  Serial.println("SUCCESS");
   
-  updateZero();
   pinMode(relay1, OUTPUT);
   pinMode(relay2, OUTPUT);
   pinMode(relay3, OUTPUT);
@@ -69,9 +68,18 @@ void loop() {
     if (rcv == '9') {
       digitalWrite(relay4, LOW);
     }
+    if (rcv == 'S') {
+      updateZero();
+      start = true;
+    }
+    if (rcv == 'E') {
+      start = false;
+    }
   }
-  
-  float p_hPa = mpr.readPressure();
-  Serial.print("p_val:"); Serial.println((p_hPa - p_zero)/CONV_FACTOR);
-  delay(1000);
+
+  if (start) {
+    float p_hPa = mpr.readPressure();
+    Serial.print("p_val:"); Serial.println((p_hPa - p_zero)/CONV_FACTOR);
+    delay(100);
+  }
 }

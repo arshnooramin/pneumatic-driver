@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from serial import Serial
+import time
 
 from valve import Valve
 
@@ -12,7 +13,7 @@ VALVE_COUNT = 4
 BTN_PADX, BTN_PADY = 5, 0
 FRAME_PADDING = (20, 10)
 VALVE_NAMES = [
-    "Input 0", "Input 1", "Input 2", "Data"
+    "Input 0", "Input 1", "Input 2", "Input 3"
 ]
 
 class App(ttk.Frame):
@@ -22,6 +23,7 @@ class App(ttk.Frame):
         self.serial_device = None
         self.valve_arr = [None for _ in range(VALVE_COUNT)]
 
+        self.dstart = False
         self.tcount = -1
         self.ty, self.px = list(), list()
     
@@ -38,8 +40,18 @@ class App(ttk.Frame):
             self.updateStatus(connected=False)
             raise ConnectionError("Failed to connect to serial device.")
 
+    # def exit(self):
+    #     if self.dstart:
+    #         self.dstart = False
+    #         self.serial_device.write(bytes('E', 'utf-8'))
+    #     self.destroy()
+
     def animatePlot(self, i):
         vrecv = False
+
+        if not self.dstart:
+            self.serial_device.write(bytes('S', 'utf-8'))
+            self.dstart = True
 
         if not self.ani:
             raise ValueError("Plot animation never started.")
@@ -47,16 +59,20 @@ class App(ttk.Frame):
         try:
             rval = self.serial_device.readline().decode()
             vrecv = True
+            self.updateStatus(connected=True)
         except:
             vrecv = False
             self.updateStatus(connected=False)
             print("Serial device not responding.")
         try:
             pval = float(rval.split(':')[1])*-1.0
+            # pval = float(rval.split(':')[1])
             vrecv = True
+            self.updateStatus(connected=True)
         except:
             vrecv = False
-            print("Serial device sending unexpected data.")
+            self.updateStatus(connected=False)
+            print("Serial device sending unexpected data: {}".format(rval))
 
         if vrecv:
             self.updateOutput(pvalue=pval)
@@ -138,7 +154,7 @@ class App(ttk.Frame):
             self.valve_arr[vid] = cvalve
             cbtn = ttk.Checkbutton(
                 self.input_frame, text=VALVE_NAMES[vid], style="Toggle.TButton",
-                variable = cstate, onvalue = 1, offvalue = 0, command=cvalve.update
+                variable = cstate, onvalue = 0, offvalue = 1, command=cvalve.update
             )
             cbtn.grid(column=vid, row=1, padx=BTN_PADX, pady=BTN_PADY)
 
